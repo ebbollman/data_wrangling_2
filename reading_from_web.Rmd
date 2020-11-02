@@ -127,3 +127,17 @@ brfss_2010_full =
   content("parsed")
 ```
 
+## Data that isn't so nice
+
+Pokemon
+
+```{r}
+pokemon_data = 
+  GET("https://pokeapi.co/api/v2/pokemon/1") %>% 
+  content()
+
+pokemon_data$name
+pokemon_data$height
+pokemon_data$abilities
+```
+
