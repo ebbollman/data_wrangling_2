@@ -1,7 +1,7 @@
 Strings and factors
 ================
 E. Brennan Bollman
-20-11-01
+20-11-02
 
 ``` r
 library(tidyverse)
