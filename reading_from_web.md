@@ -120,6 +120,8 @@ swm_df =
   )
 ```
 
+## API
+
 ### NYC Water Data API
 
 For this:
@@ -149,3 +151,49 @@ nyc_water_json =
 
 This gives response on process used, date, status request, and then csv
 provided. Will need to parse from table in csv to tibble
+
+### CDC BRFSS data
+
+``` r
+brfss_2010 = 
+  GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv") %>% 
+  content("parsed")
+```
+
+    ## Parsed with column specification:
+    ## cols(
+    ##   .default = col_character(),
+    ##   year = col_double(),
+    ##   sample_size = col_double(),
+    ##   data_value = col_double(),
+    ##   confidence_limit_low = col_double(),
+    ##   confidence_limit_high = col_double(),
+    ##   display_order = col_double(),
+    ##   locationid = col_logical()
+    ## )
+
+    ## See spec(...) for full column specifications.
+
+Learn about paging and iterating:
+<https://dev.socrata.com/docs/paging.html>
+
+``` r
+brfss_2010_full = 
+  GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv",
+      query = list("$limit" = 155000)) %>% 
+  content("parsed")
+```
+
+    ## Parsed with column specification:
+    ## cols(
+    ##   .default = col_character(),
+    ##   year = col_double(),
+    ##   sample_size = col_double(),
+    ##   data_value = col_double(),
+    ##   confidence_limit_low = col_double(),
+    ##   confidence_limit_high = col_double(),
+    ##   display_order = col_double(),
+    ##   locationid = col_logical()
+    ## )
+
+    ## See spec(...) for full column specifications.

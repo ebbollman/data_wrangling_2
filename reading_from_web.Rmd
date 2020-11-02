@@ -90,6 +90,8 @@ swm_df =
   )
 ```
 
+## API
+
 ### NYC Water Data API
 
 For this: https://data.cityofnewyork.us/Environment/Water-Consumption-In-The-New-York-City/ia2d-e54m
@@ -107,3 +109,21 @@ nyc_water_json =
 ```
 
 This gives response on process used, date, status request, and then csv provided. Will need to parse from table in csv to tibble
+
+### CDC BRFSS data
+
+```{r}
+brfss_2010 = 
+  GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv") %>% 
+  content("parsed")
+```
+
+Learn about paging and iterating: https://dev.socrata.com/docs/paging.html
+
+```{r}
+brfss_2010_full = 
+  GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv",
+      query = list("$limit" = 155000)) %>% 
+  content("parsed")
+```
+
