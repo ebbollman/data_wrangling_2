@@ -263,5 +263,34 @@ data_marj =
     percent = str_replace(percent, "[a-c]$", ""),
     percent = as.numeric(percent)
   ) %>% 
-  filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
+  filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West"))) %>% 
+  janitor::clean_names()
 ```
+
+## NSDUH - factors
+
+Factor re-level for a plot.
+
+``` r
+data_marj %>% 
+  filter(age == "12-17") %>% 
+  mutate(state = fct_relevel(state, "Texas", "Oklahoma")) %>% 
+  ggplot(aes(x = state, y = percent, color = year)) + 
+  geom_point() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
+<img src="strings_factors_files/figure-gfm/unnamed-chunk-11-1.png" width="90%" />
+
+Factor re-order from plot.
+
+``` r
+data_marj %>% 
+  filter(age == "12-17") %>% 
+  mutate(state = fct_reorder(state, percent)) %>% 
+  ggplot(aes(x = state, y = percent, color = year)) + 
+  geom_point() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
+<img src="strings_factors_files/figure-gfm/unnamed-chunk-12-1.png" width="90%" />
