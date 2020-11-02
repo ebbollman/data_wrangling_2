@@ -1,0 +1,165 @@
+---
+title: "Midterm Project"
+author: E. Brennan Bollman
+date: '`r format(Sys.time(), "%y-%m-%d")`'
+output: github_document
+---
+
+```{r setup, INCLUDE = FALSE}
+library(tidyverse)
+library(readxl)
+library(hexbin)
+library(patchwork)
+library(ggridges)
+
+knitr::opts_chunk$set(
+  fig.width = 10,
+  fig.asp = 0.6,
+  out.width = "90%"
+)
+
+theme_set(theme_bw() + theme(legend.position = "bottom")) 
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d()
+scale_fill_discrete = scale_fill_viridis_d()
+```
+
+## Problem 1 Data cleaning
+
+This dataset describes the weight of three dogs (Raisin, Simone, and Gagne) over a period of 3 years, with a standard object also weighed for reference. As provided, the dataset is not easily useable for analysis. This report will clean the data, and then present descriptive statistics and graphical visualization of the dogs' weights. 
+
+##### Step 1: Raw data cleaning 
+
+```{r warning = FALSE}
+dogs_df = 
+  read_excel("./data/dogweights_07sept2020.xlsx",
+             skip = 1,
+             col_types = c("text")) %>% 
+  janitor::clean_names() %>% 
+  mutate(date = as.Date(as.numeric(date), origin = "1899-12-30")) %>% 
+  drop_na(any_of(c("raisin")))
+
+colnames(dogs_df)[6] = "notes"
+which(is.na(dogs_df$date))
+dogs_df$date[74] = as.Date("2019-01-22")
+```
+
+Process: read in variables as characters, addressed bug in read_excel function parsing dates as strings (which occurred in default read_excel also, regardless of specifying column types). Identified missing date between 1/19/2019 and 1/26/2019, so chose to set this as 1/22/2019, the midpoint between two known dates in order to not lose any weight data. 
+
+Also noted 3 dates where *no* dog or object was measured, and dropped these 'empty' observations by noting that dog Raisin was measured every other valid date.
+
+##### Step 2: Tidy version of dog weights
+
+```{r}
+dog_wts_df =
+  dogs_df %>% 
+  pivot_longer(
+    raisin:std,
+    names_to = "dog",
+    values_to = "weight"
+  ) %>% 
+  mutate(weight_lbs = as.numeric(str_sub(weight, start = 1L, end = 2L)),
+         weight_oz = as.numeric(str_sub(weight, start = 4L, end = 7L)),
+         weight_lbs_conv = weight_lbs * 16,
+         weight_tot_oz = weight_lbs_conv + weight_oz) %>% 
+  select(date, dog, weight_tot_oz)
+
+write_csv(dog_wts_df, "./data/dog_wts.csv")
+
+head(dog_wts_df) %>% 
+  knitr::kable()
+```
+
+A sample top several rows of this dataframe is above. 
+
+Process: Rearranged table, converted unwieldy form of weight (19 12 = 19lbs 12oz) to total ounces. NA observations were maintained in this form of the data-frame, so one can visualize when one dog or object was not measured. As above, only 'empty' date observations which had no measurements at all were removed.
+
+Note 'std' is in dog column but refers to the standard object that the data collector used as a weight control, which was only infrequently measured. 
+
+##### Step 3: Tidy version of notes
+
+```{r}
+dog_notes_df = 
+  dogs_df %>% 
+  select(date, notes) %>% 
+  drop_na(notes)
+
+write_csv(dog_notes_df, "./data/dog_notes.csv")
+
+dog_notes_df %>% 
+  knitr::kable()
+```
+
+Gagne died during data collection!
+
+## Problem 2 Exploratory Data Analysis
+
+This dataset collects information on `r dog_wts_df %>% distinct(date) %>% count()` different dates. The data collector made notes on `r nrow(dog_notes_df)` occasions. 
+
+```{r}
+dog_wts_df %>%
+  drop_na(weight_tot_oz) %>% 
+  group_by(dog) %>% 
+  summarize(mean_weight = mean(weight_tot_oz),
+            sd_weight = sd(weight_tot_oz),
+            min_weight = min(weight_tot_oz),
+            max_weight = max(weight_tot_oz),
+            no_obs = n_distinct(date)
+              ) %>% 
+  knitr::kable()
+```
+
+This table shows the mean, standard deviation, range, and number of times each dog (and standard object) was measured, with weights in ounces. The standard object varied little. Raisin was the heaviest dog, and their weight varied the most. 
+
+## Problem 3 Plots
+
+```{r}
+weight_dist_p = 
+  dog_wts_df %>% 
+  ggplot(aes(x = weight_tot_oz, y = dog, fill = dog)) + 
+  geom_density_ridges() + 
+  viridis::scale_fill_viridis(
+    name = "Dog name",
+    discrete = TRUE
+  ) + 
+  scale_x_continuous(expand = c(0.01, 1)) + 
+  scale_y_discrete(expand = c(0.1, 0)) + 
+  labs(
+    title = "Ridges plot of dog weight distributions",
+    x = "Weight (oz)",
+    y = "Dog name"
+  )
+
+weight_time_p = 
+  dog_wts_df %>% 
+  ggplot(aes(x = date, y = weight_tot_oz, color = dog)) + 
+  geom_point() + 
+  geom_smooth() +
+  viridis::scale_color_viridis(
+    name = "Dog name",
+    discrete = TRUE
+  ) + 
+  labs(
+    title = "Scatterplot of dog weights over time with fitted line",
+    x = "Date",
+    y = "Weight (oz)"
+  )
+
+weight_dist_p + weight_time_p
+```
+
+(Both plots show the standard object was heaviest with little variation.)
+
+The left-hand plot of dog weight distributions shows that Gagne and Simone were similar weight dogs most of the time, and both had noticeable dips in weight recorded. Raisin was a heavier dog. 
+
+The right-hand scatterplot of weight over time shows that Gagne lost weight before their death! Simone and Raisin also both had periods in which they lost weight in the middle of the study, before later recovering weight. Of note, the scatterplot shows an outlier value for Raisin, likely the minimum 117 shown in table above; this is likely a data input error that skews Raisin's mean weight.
+
+```{r}
+wordcountaddin::word_count("p8105_mtp_ebb2166.Rmd")
+```
+
