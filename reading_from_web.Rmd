@@ -90,5 +90,20 @@ swm_df =
   )
 ```
 
+### NYC Water Data API
 
+For this: https://data.cityofnewyork.us/Environment/Water-Consumption-In-The-New-York-City/ia2d-e54m
 
+```{r}
+nyc_water = 
+  GET("https://data.cityofnewyork.us/resource/ia2d-e54m.csv") %>% 
+  content("parsed")
+
+nyc_water_json = 
+  GET("https://data.cityofnewyork.us/resource/ia2d-e54m.json") %>% 
+  content("text") %>% 
+  jsonlite::fromJSON() %>% 
+  as_tibble()
+```
+
+This gives response on process used, date, status request, and then csv provided. Will need to parse from table in csv to tibble
